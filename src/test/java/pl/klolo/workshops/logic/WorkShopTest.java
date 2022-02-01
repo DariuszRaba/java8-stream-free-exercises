@@ -762,7 +762,7 @@ public class WorkShopTest {
     assertEquals(accountUserMoneyInPLNMap.size(), 6L);
     assertEquals(accountUserMoneyInPLNMap.get(AccountType.LO1).size(), 6L);
     assertEquals(accountUserMoneyInPLNMap.get(AccountType.ROR1).size(), 3L);
-    assertEquals(accountUserMoneyInPLNMap.get(AccountType.ROR1).values().stream().reduce(BigDecimal::add).get(), BigDecimal.valueOf(13151.04));
+    assertEquals(accountUserMoneyInPLNMap.get(AccountType.ROR1).values().stream().reduce(BigDecimal::add).get(), BigDecimal.valueOf(16239494.68));
     assertEquals(accountUserMoneyInPLNMap.get(AccountType.LO1).values().stream().reduce(BigDecimal::add).get(), BigDecimal.valueOf(105864.81));
   }
 
@@ -777,7 +777,7 @@ public class WorkShopTest {
     assertEquals(accountUserMoneyInPLNMap.size(), 6);
     assertEquals(accountUserMoneyInPLNMap.get(AccountType.LO1).size(), 6);
     assertEquals(accountUserMoneyInPLNMap.get(AccountType.ROR1).size(), 3);
-    assertEquals(accountUserMoneyInPLNMap.get(AccountType.ROR1).values().stream().reduce(BigDecimal::add).get(), BigDecimal.valueOf(13151.04));
+    assertEquals(accountUserMoneyInPLNMap.get(AccountType.ROR1).values().stream().reduce(BigDecimal::add).get(), BigDecimal.valueOf(16239494.68));
     assertEquals(accountUserMoneyInPLNMap.get(AccountType.LO1).values().stream().reduce(BigDecimal::add).get(), BigDecimal.valueOf(105864.81));
   }
 

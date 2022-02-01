@@ -427,7 +427,7 @@ class WorkShop {
 
     public AccountType getMostPopularByType() {
         try {
-            return getAccoutStream()
+            return getAccountStream()
                     .map(Account::getType)
                     .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                     .entrySet()
@@ -560,7 +560,7 @@ class WorkShop {
      * Zwraca mapę rachunków, gdzie kluczem jesy numer rachunku, a wartością ten rachunek.
      */
     Map<String, Account> createAccountsMap() {
-        return getAccoutStream()
+        return getAccountStream()
                 .collect(Collectors.toMap(Account::getNumber, a -> a));
     }
 
@@ -568,7 +568,7 @@ class WorkShop {
      * Zwraca mapę rachunków, gdzie kluczem jesy numer rachunku, a wartością ten rachunek. Napisz to za pomocą strumieni.
      */
     Map<String, Account> createAccountsMapAsStream() {
-        return getAccoutStream()
+        return getAccountStream()
                 .collect(Collectors.toMap(Account::getNumber, e -> e));
     }
 
@@ -673,7 +673,7 @@ class WorkShop {
      * Zwraca mapę, gdzie kluczem jest typ rachunku a wartością kwota wszystkich środków na rachunkach tego typu przeliczona na złotówki.
      */
     Map<AccountType, BigDecimal> getMoneyOnAccounts() {
-        return getAccoutStream()
+        return getAccountStream()
                 .collect(Collectors.groupingBy(Account::getType, Collectors.reducing(BigDecimal.ZERO, this::getAccountAmountInPLN, BigDecimal::add)));
     }
 
@@ -682,7 +682,7 @@ class WorkShop {
      * strumieni. Ustaw precyzje na 0
      */
     Map<AccountType, BigDecimal> getMoneyOnAccountsAsStream() {
-        return getAccoutStream()
+        return getAccountStream()
                 .collect(Collectors.groupingBy(Account::getType, Collectors.reducing(BigDecimal.ZERO.setScale(0, RoundingMode.HALF_UP), this::getAccountAmountInPLN, BigDecimal::add)));
     }
 
@@ -748,10 +748,33 @@ class WorkShop {
      * na rachunku danego typu przeliczona na złotkówki.
      */
     Map<AccountType, Map<User, BigDecimal>> getAccountUserMoneyInPLNMap() {
-//        return getUsersStream()
-//                .flatMap(u -> u.getAccounts().stream())
-//                .collect(Collectors.groupingBy(Account::getType ,Collectors.groupingBy( a -> a,  Collectors.reducing(BigDecimal.ZERO.setScale(0, RoundingMode.HALF_UP), this::getAccountAmountInPLN, BigDecimal::add))));
-        return null;
+        return getAccountStream()
+                .map(Account::getType)
+                .collect(Collectors.toMap(
+                        accountTypeKey -> accountTypeKey,
+                        this::mapUsersByAccountType,
+                        (a1, a2) -> a1));
+    }
+
+    private Map<User, BigDecimal> mapUsersByAccountType(AccountType accountType) {
+        return getUserStream()
+                .filter(user -> user.getSex().equals(Sex.MAN) &&
+                        user.getAccounts().stream()
+                                .anyMatch(account -> account.getType().equals(accountType)))
+                .collect(Collectors.toMap(
+                        theUserKey -> theUserKey,
+                        theUserValue -> sumUserSpecificAccountTypeMoneyInPLN(theUserValue, accountType),
+                        (a1, a2) -> a1));
+    }
+
+    private BigDecimal sumUserSpecificAccountTypeMoneyInPLN(User user, AccountType type) {
+        return getUserStream()
+                .filter(u -> u.equals(user))
+                .flatMap(u -> u.getAccounts().stream())
+                .filter(account -> account.getType().equals(type))
+                .map(this::getAccountAmountInPLN)
+                .map(b -> b.setScale(2,RoundingMode.HALF_UP))
+                .reduce(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal::add);
     }
 
 
@@ -760,7 +783,12 @@ class WorkShop {
      * na rachunku danego typu przeliczona na złotkówki.  Napisz to za pomocą strumieni.
      */
     Map<AccountType, Map<User, BigDecimal>> getAccountUserMoneyInPLNMapAsStream() {
-        return null;
+        return getAccountStream()
+                .map(Account::getType)
+                .collect(Collectors.toMap(
+                        accountTypeKey -> accountTypeKey,
+                        this::mapUsersByAccountType,
+                        (a1, a2) -> a1));
     }
 
     /**
@@ -769,7 +797,15 @@ class WorkShop {
      */
 
     Map<Permit, List<User>> getUsersByTheyPermitsSorted() {
-        return null;
+        return getUserStream().flatMap(user -> user.getPermits().stream())
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        permit -> getUserStream()
+                                .filter(user -> user.getPermits().contains(permit))
+                                .sorted((o1, o2) -> getTotalCashInPLN(o2.getAccounts()).subtract(getTotalCashInPLN(o1.getAccounts())).intValue())
+                                .collect(Collectors.toList()),
+                        (a1, a2) -> a1
+                ));
     }
 
     /**
@@ -778,7 +814,15 @@ class WorkShop {
      */
 
     Map<Permit, List<User>> getUsersByTheyPermitsSortedAsStream() {
-        return null;
+        return getUserStream().flatMap(user -> user.getPermits().stream())
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        permit -> getUserStream()
+                                .filter(user -> user.getPermits().contains(permit))
+                                .sorted((o1, o2) -> getTotalCashInPLN(o2.getAccounts()).subtract(getTotalCashInPLN(o1.getAccounts())).intValue())
+                                .collect(Collectors.toList()),
+                        (a1, a2) -> a1
+                ));
     }
 
     /**
@@ -817,7 +861,7 @@ class WorkShop {
     /**
      * Tworzy strumień rachunków.
      */
-    private Stream<Account> getAccoutStream() {
+    private Stream<Account> getAccountStream() {
         return getUsersStream()
                 .flatMap(u -> u.getAccounts().stream());
     }
